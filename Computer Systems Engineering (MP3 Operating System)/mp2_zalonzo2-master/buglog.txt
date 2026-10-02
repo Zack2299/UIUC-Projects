@@ -1,0 +1,67 @@
+Checkpoint 1:
+- My draw_vert_line would not work correctly. I replaced all of the x's, y's,
+show_x's, and show_y's correctly, as well as putting in vert_line_fn. However,
+I did not properly understand copying image data into the build buffer
+because I left the for loop in, like how it is for horiz. I figured out that the plane 
+would not change and that we needed to increment addr by the number of addresses
+in a row and that fixed the problem.
+
+- Bug in text_to_graphics. I was looking at the LSB of the current byte first instead of the MSB.
+
+- Problem with drawing to status bar. I did text_to_graphics, copy_status_bar,
+and draw_status_bar and when I tried to write "test" it would just show a blank screen.
+I discovered I was indexing into my buffer incorrectly (for example, some of the numbers
+needed to be divided by 4)
+
+- Problem with status bar not being updated. I originally put the draw_status_bar call and all of the
+other things associated with that (centering, getting fruit/time, etc.) inside of the for loop for the level
+but not inside the while loop. This meant that it would print correctly one the level began but the time
+would not work and if you collect a fruit it would not decrement on the status bar.
+
+- Bug with being able to walk behind status bar. I simply updated the correct vertical size of the maze
+in modex.h from 200 to 182 (200 - 18 to substract status bar size) and that made it so there was a wall
+at the status bar.
+
+- Bug with masking. In my draw_player_block function, I had an if statement to draw the player if the player mask is 1,
+and then after that saved the background into bg_blk. This is an obvious mistake because it would copy
+the player as the background since the player was just put into memory. I just rearranged the if statement to be after the
+bg_blk part.
+
+Checkpoint 2:
+- My method for trying to do floating text at first was completely wrong. I was trying to make a modified version of copy_status_bar 
+and do it in a similar way to the status bar instead of the masking functions. I eventually got it so that it was printing something, 
+but it was really squished down and covered the entire screen. I think the way we did status bar cannot be done with only a certain 
+section of the screen so even though my dimensions were correct it stretched it to fill an entire row of the screen instead of the 
+place that I wanted the floating text to show up
+
+- old player image not being covered by the bg even though I fixed that in checkpoint 1. This just had to do with the ordering of my 
+masking functions. I replaced the background of the floating text after replacing the bg of the player and the floating text bg had 
+stored the player as part of the background. I just swapped the order and that fixed it
+
+- Bug with floating text not showing properly. It looked like 4 lines of random pixels instead of the text I wanted. I fixed this by 
+indexing into the buffer not with the planes and just indexed normally and then the text showed up
+
+- Problem with colors: I tried averaging with white using 0xFF instead of 0x3F so the color of the transparent text looked way too blue
+
+- Problem with colors: For my set color function, I did not make it change the corresponding transparency text so when my floating 
+text went over a wall it would look neon and not at all the correct color averaged with white
+
+- I set my status bar to be the player color location and not the wall color location so it was changing every half second like the 
+player. Also, not all of the pixels on the status bar changed color so I had to loop through the entire status bar to change colors 
+that were not set yet
+
+- Tons of small problems with tux just not working properly. This includes not knowing I had to copy_to_user in the buttons function, 
+not knowing how to get the packet data in the functions (the fix was making them global variables and letting handle packet update them), 
+problems with my math trying to get different data like which buttons were on, which leds are on, etc.
+
+- Problems with not knowing how to turn leds off. At first, I didn’t even handle this functionality. I then tried making it so that 
+it would only send the leds that I wanted and tell it that the other leds were off. However, we’re supposed to actually say that we’re 
+going to send data for all of the leds and then if an led should be off, we send NULL (0) for that led
+
+- Wasn’t handling spamming the leds. I just implemented a flag (kind of like a spinlock) and that seemed to work
+
+- I did not know that we had to handle different opcodes in tux_ctl_handle_packet. I was always setting buttons and arrow buttons 
+instead of only doing it when the opcode was bioc event
+
+- The second led’s decimal point was on instead of the third. This happened because I was going left to right handling the decimal 
+points instead of right to left so the decimal points were flipped

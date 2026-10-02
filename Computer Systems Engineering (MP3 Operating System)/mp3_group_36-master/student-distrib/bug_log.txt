@@ -1,0 +1,381 @@
+
+"Copyright (c) 2020-2024 by Joshua J. Hur."
+
+ Read Clause 69, Section 420 for vital information
+ 
+ Permission to use, copy, modify, and distribute this software and its
+ documentation for any purpose, without fee, and without written agreement is
+ hereby granted, provided that the above copyright notice and the following
+ two paragraphs appear in all copies of this software.
+ 
+ IN NO EVENT SHALL THE AUTHOR OR THE UNIVERSITY OF JOSHUA BE LIABLE TO
+ ANY PARTY FOR DIRECT, INDIRECT, SPECIAL, INCIDENTAL, OR CONSEQUENTIAL
+ DAMAGES ARISING OUT  OF THE USE OF THIS SOFTWARE AND ITS DOCUMENTATION,
+ EVEN IF THE AUTHOR AND/OR THE UNIVERSITY OF JOSHUA HAS BEEN ADVISED
+ OF THE POSSIBILITY OF SUCH DAMAGE.
+ 
+ THE AUTHOR AND THE UNIVERSITY OF JOSHUA SPECIFICALLY DISCLAIM ANY
+ WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+ MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.  THE SOFTWARE
+ PROVIDED HEREUNDER IS ON AN "AS IS" BASIS, AND NEITHER THE AUTHOR NOR
+ THE UNIVERSITY OF JOSHUA HAS ANY OBLIGATION TO PROVIDE MAINTENANCE,
+ SUPPORT, UPDATES, ENHANCEMENTS, OR MODIFICATIONS."
+ 
+ Author:        Joshua Hur
+ Version:       1
+ Creation Date: Tues Mar 21 14:25:00 2023
+ Filename:      bug_log.c
+ History:       
+    1   Tues Mar 21 14:25:00 2023
+        First written
+
+
+----- MACHINE PROGRAMMING 3, CHECKPOINT 3.1 BUGS -----
+
+ debug.sh:
+    [NO FUNCTIONS]:
+        Error/Bug:
+            1. File would not work.
+
+        Fix:
+            1. The end line char was set to dos, so we changed it to unix.
+
+ asmlinkage.S:
+    [NOT IN FUNCTIONS]:
+        Error/Bug:
+            1. IDT would not compile with the linkage
+
+        Fix:
+            1. ASM linkage had to be defined at the top of file as 1, and if not define
+
+ rtc.c:
+    void rtc_init():
+        Error/Bug:
+            1. RTC would fail.
+
+        Fix:
+            1. Syntax for the OUTB instruction were flipped causing unwanted issues as the
+                port and data were flipped.
+
+ i8259.c:
+    void i8259_init():
+        Error/Bug:
+            1. Compiled but did not allow the IDT to work as intended. 
+
+        Fix:
+            1. Command words ICW2~ICW4 were sent to the command port rather than
+                the data port for both PICs (master and slave). Routed the ICW 
+                commands to the data ports of both PICs.
+    
+    void enable_irq(uint32_t irq_num):
+        Error/Bug:
+            1. Compiled but did not allow the IDT to work as intended. 
+
+        Fix:
+            1. Port argument for data and outb were sent to the command port rather 
+                than the data port for both PICs (master and slave). Routed the ports 
+                to the data ports of both PICs.
+
+    void disable_irq(uint32_t irq_num):
+        Error/Bug:
+            1. Compiled but did not allow the IDT to work as intended. 
+
+        Fix:
+            1. Port argument for data and outb were sent to the command port rather 
+                than the data port for both PICs (master and slave). Routed the ports 
+                to the data ports of both PICs.
+
+ kernel.c:
+    [NOT IN FUNCTIONS]:
+        Error/Bug:
+            1. Crashing and boot looping on exception test case
+
+        Fix:
+            1. The exception file was not included in the our kernel code. We had 
+                commented out our idt initialization.
+
+
+ paging.c:
+    paging_init():
+        Error/Bug:
+            1. Data structure of struct union struct was not being recognized and could
+                not be accessed.
+            2. Data structure was being accessed but a different implementation was 
+                preventing access utilizing the old method.
+            3. First page directory address was ambiguous and not correct with tests. 
+            4. Kernel address needed (0x400000) was too big to shove into the 4mb page
+                directory implementation.
+            5. Page table address for page_table[0xB8] was set to 0x8B000. Caused unwanted
+                issues within the code.
+            6. Page table addresses for ones not being used (for CP1) were set to 0.
+            7. Paging was causing the OS window to bootloop.
+            8. Paging was causing the OS window to crash.
+            9. Paging was reviewing by multiple TAs and they all could not figure out the   
+                issue that was the culprit.
+
+        Fix:
+            1. Ptr arguments were added to paging_init() to allow access to the structs.
+            2. Ptr arguments were removed and used struct calling conventions to access
+                and edit elements.
+            3. Set the value of the address as the start of the page_table array. Works
+                because an array is a set of ptrs (addresses).
+            4. Kernel address needed was split between the two address bit spaces dedicated
+                for the structure.
+            5. Page table address for page_table[0xB8] was set to 0xB8.
+            6. Page table addresses for ones not being used (for CP1) were set to the index 
+                value.
+            7. Changed structures to rid of the indexing ([i][j]).
+            8. Changed other things BUT caused the OS window to crash again.
+            9. Completely redid the implementation of paging. For example, the union structs
+                were rid of, but the variable initializations were set as the same as before.
+    
+----- MACHINE PROGRAMMING 3, CHECKPOINT 3.2 BUGS -----
+
+ file_driver.h:
+    [NOT IN FUNCTIONS]:
+        Error/Bug:
+            1. Certain structs/elements were not being recognized by the compiler.
+        
+        Fix:
+            1. Instead of two seperate header files for file system and its drivers,
+                combined them into one single header file.
+ 
+ file_sys.c:
+    read_dentry_by_name:
+        Error/Bug:
+            1. Did not do a deepcopy of the struct being examined.
+
+        Fix:
+            1. Copied the actual struct versus the pointer to the struct.
+
+    read_dentry_by_index:
+        Error/Bug:
+            1. Did not do a deepcopy of the struct being examined.
+
+        Fix:
+            1. Copied the actual struct versus the pointer to the struct.
+
+    read_data:
+        Error/Bug:
+            1. Was not reading values correctly from the data blocks.
+            2. Buffer was outputting incorrect and/or arbitary values.
+
+        Fix:
+            1. Fixed logic that correlated to the data blocks.
+            2. Index inside of the buffer was altered to prevent random pointer values from
+                altering the values inside of the buffer.
+
+
+ terminal.c
+    getc:
+        Error/Bug: 
+            1. When overfilling the keyboard buffer and pressing enter the string would not be written.
+
+        Fix: 
+            1. Enter flag was never set if buffer gets overfilled so write function would never be called.
+
+    terminal_read:
+        Error/Bug: 
+            1. Number of bytes read would be one less than intended.
+        
+        Fix: 
+            1. Was using loop index as return value which is 0-indexed and bytes is 1-indexed.
+
+    terminal_write:
+        Error/Bug: 
+            1. Number of bytes read would be one less than intended.
+
+        Fix: 
+            1. Was using loop index as return value which is 0-indexed and bytes is 1-indexed.
+
+ lib.c
+    putc:
+        Error/Bug: 
+            1: When backspacing and reaching beginning of line the cursor would not move up to next line .
+            2. When pressing enter then immediately backspacing the cursor would go to end of line insead of where newline was pressed.
+
+        Fix: 
+            1. Logic I used to go up to the next line was only valid at the top line, opposite of what I wanted.
+            2. Created an array which holds all the x positions of where enter was pressed or not pressed for each line.
+
+ keyboard.c
+    keyboard_handler:
+        Error/Bug: 
+            1. When right control was used to clear screen the screen would not clear.
+        
+        Fix: 
+            1. Added another inb to recieve both packets that get sent.
+
+----- MACHINE PROGRAMMING 3, CHECKPOINT 3.3 BUGS -----
+
+ file_driver.c
+    read_data:
+        Error/Bug:
+            1. First char of frame0.txt and likely other files was not being read.
+            2. Page fault when the length parameter to read was longer than the actual
+                size of the data contents.
+        Fix:
+            1. Altered the read_data logic to include the first char of the file's data.
+            2. Previous gitlab fix was not transferred to the current work, and as a result,
+                the error occurred.
+
+ sys_call_asm.S:
+    syscall_handler:
+        Error/Bug:
+            1. General protection error was called.
+
+        Fix:
+            1. Extra layer of assembly linkage was pushing extraneous content to the stack
+                so altered to not alter stack.
+
+ sys_call.c:
+    execute:
+        Error/Bug:
+            1. Ran into the issue where it would spin cycles after context switching. 
+            2. Invalid commands would repeat the last valid executed command.
+            3. Page fault when a command larger than 32 chars was entered into shell.
+            4. Boot loop occurred when starting the OS.
+            5. Execution's assembly was not working. Caused various issues/errors.
+            6. Execution could be prone to interrupts by the system call.
+
+        Fix:
+            1. Did not re-enable interrupts so an sti() was added.
+            2. Execute did not account for the return error inside of read_dentry_by_name
+                ,and as a result did not recognize the invalid command.
+            3. Added a conditional to return -1 when encountering a command that exceeded
+                the buffer's size.
+            4. Discovered esp0's value was set incorrectly. Changed to correct value.
+            5. Switched to inline assembly to bypass various issues/errors.
+            6. Wrapped a majority of exeuction with cli() and sti() to prevent interuptions.
+
+    halt:
+        Error/Bug:
+            1. Unexpected halt of shell when a process was complete.
+
+        Fix:
+            1. Altered the PCB's esp/ebp to the current processes rather than the parent PCB's 
+                esp/ebp.
+
+ paging.c:
+    paging_set_up:
+        Error/Bug:
+            1. Page fault occurs when setting up the 8MB pages.
+            2. Page faults were occuring when executing different processes.
+            3. Page faults were still occuring after FIX 1.
+            
+        Fix:
+            1. Page directory's base address was not shifted by 22 for alignment.
+            2. TLB was not being flushed.
+            3. Global bit of paging was set to 0 to allow TLB to flush.
+
+----- MACHINE PROGRAMMING 3, CHECKPOINT 3.4 BUGS -----
+
+ sys_call.c:
+    execute:
+        Error/Bug:
+            1. Would not recognize commands and arguments that were not normal. If there 
+                were spaces before command, between command and args, after args, and etc,
+                it would not work properly. 
+
+        Fix:
+            1. Parsing logic was re-written to handle spaces. Handle all types of user input.
+
+ret_neg_1:
+        Error/Bug:
+            1. Page fault after doing syserr 7.
+
+        Fix:
+            1. stdin_fp.write was set to NULL. Attaching it to a function that returns -1.
+
+ paging.c:
+    paging_set_up:
+        Error/Bug:
+            1. Page fault in bitmap.
+
+        Fix:
+            1. Forgot to set r/w to 1 in the page directory.
+            
+----- MACHINE PROGRAMMING 3, CHECKPOINT 3.5 BUGS -----
+
+ sys_call.c:
+    execute:    
+        Error/Bug:
+            1. Random page faults, protection issues, and more that are undeterministic.
+            2. rtc_open is never called. 
+
+        Fix:
+            1. Order when the variables get updated were in the wrong place. Moved code.
+            2. Changed the logic in the dispatchers to allow rtc.open to be called and used.
+    
+    halt:
+        Error/Bug:
+            1. Processes halted in nonchronilogical order messes up the OS.
+            2. Base shells were messing up when they were halted.
+            3. General exceptions when different processes halted.
+
+        Fix:
+            1. Added a bitmap and logic to allow for nonchronilogical halting.
+            2. Parent_ids were checked to determine whether a specific shell was a base or not.
+            3. The saved ebp/esp values were now connected with the processes parent rather than itself.
+
+    schedule:
+        Error/Bug:
+            1. Issues when scheduling is called with the PIT interrupt.
+
+        Fix:
+            1. running_terminal is now updated with the call of schedule.
+
+ lib.c:
+    putc:
+        Error/Bug:
+            1. Terminal switch bleeds contents from other terminals.
+
+        Fix:
+            1. Added a new putc function that is different from the putc that the user programs
+                use with their processes.
+
+ paging.c:
+    fish_remap:
+        Error/Bug:
+            1. When switching terminals, the fish would update to the screen, but would not
+                continue updating.
+
+        Fix:
+            1. Logic for the function was changed to allow continuous updates when back to the
+                terminal that was running fish.
+ 
+ rtc.c:
+    rtc_open:
+        Error/Bug:
+            1. Initialization of variables never happened.
+    
+        Fix:
+            1. rtc_open was never called so changes in sys_call.c were made to allow for the call.
+
+    rtc_handler:
+        Error/Bug:
+            1. Behavior of pingpong was weird. It never pingpongs.
+
+        Fix:
+            1. Flag variables were fixed to allow for proper logic operations.
+    
+    rtc_read:
+        Error/Bug:
+            1. Behavior of pingpong was weird. Pingponged VERY fast.
+
+        Fix:
+            1. Conditional before the while loop was based off a variables that was essentially
+                no longer being used. Changed what it was based off.
+
+    rtc_write:
+        Error/Bug:
+            1. Pingpong's frequency of bouncing was too slow.
+
+        Fix:
+            1. Altered the rtc's frequency setting. Fixed the frequency value to change the
+                speed of pingpong's pingpong.
+
+CLAUSE 69
+    SECTION 420:
+        RULE 34:
+            This is not real and is joke :)
